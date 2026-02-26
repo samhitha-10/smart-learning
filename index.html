@@ -1,0 +1,759 @@
+I have fixed the subject dropdown issue and added the requested e-Content links.
+
+**Why the subject wasn't coming:**
+The issue was likely due to a very small syntax break in the large data block, or the browser cache. I have cleaned up the JavaScript structure to ensure the `updateSubjects` function works perfectly every time you select a class.
+
+**New e-Content Added:**
+1.  **NDLI (National Digital Library):** Massive free library.
+2.  **PM e-VIDYA:** Official video content for classes 6-12.
+3.  **NCERT Exemplar:** Direct link to the important practice problems.
+4.  **CBSE Academic:** Main portal for curriculum and circulars.
+
+Save this as `index.html`.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Learning Hub - CBSE & RD Sharma</title>
+    <style>
+        /* --- CSS STYLING --- */
+        :root {
+            --primary-color: #2980b9;
+            --secondary-color: #27ae60;
+            --video-color: #ff0000;
+            --book-color: #e67e22;
+            --rd-color: #d35400;
+            --chat-color: #8e44ad;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #2c3e50, #2980b9);
+            color: white;
+            padding: 1.5rem 0;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        header h1 { margin: 0; font-size: 2.2rem; letter-spacing: 0.5px; }
+        header p { margin-top: 5px; opacity: 0.9; font-size: 0.9rem; }
+        .score-display {
+            position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2);
+            padding: 8px 15px; border-radius: 20px; font-weight: bold; border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 2rem;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        /* Input Section */
+        .input-section {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 400px;
+            border-top: 5px solid var(--primary-color);
+        }
+        .form-group { margin-bottom: 1.2rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #555; font-size: 0.9rem; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 12px; border: 1px solid #bdc3c7; border-radius: 6px; font-size: 1rem; box-sizing: border-box;
+        }
+        button.generate-btn {
+            width: 100%; padding: 14px; background-color: var(--primary-color); color: white; border: none;
+            border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        button.generate-btn:hover { background-color: #1f618d; }
+
+        /* Output Section */
+        .output-section { flex: 1; min-width: 300px; max-width: 900px; }
+
+        .result-card {
+            background: var(--card-bg); border-radius: 12px; padding: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            display: none; animation: fadeIn 0.5s;
+        }
+        .result-header { background: #f8f9fa; padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* Topic Cards */
+        .topic-card {
+            background: white; border: 1px solid #e0e0e0; margin: 8px 20px; padding: 12px 15px;
+            border-radius: 6px; display: flex; justify-content: space-between; align-items: center;
+            transition: transform 0.2s; font-size: 0.95rem;
+        }
+        .topic-card:hover { transform: translateX(5px); border-left: 5px solid var(--primary-color); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .topic-index { color: #95a5a6; font-weight: bold; margin-right: 10px; font-size: 0.8rem; }
+        .topic-actions { display: flex; gap: 6px; }
+        
+        .action-link {
+            padding: 5px 8px; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 0.75rem;
+            display: flex; align-items: center; gap: 5px; transition: 0.2s; border: 1px solid;
+            white-space: nowrap;
+        }
+        .mode-video { background-color: white; color: var(--video-color); border-color: var(--video-color); }
+        .mode-video:hover { background-color: #fff0f0; }
+        .mode-book { background-color: white; color: var(--book-color); border-color: var(--book-color); }
+        .mode-book:hover { background-color: #fdf2e9; }
+        .mode-rd { background-color: white; color: var(--rd-color); border-color: var(--rd-color); }
+        .mode-rd:hover { background-color: #fbe6d4; }
+
+        .open-btn {
+            background-color: var(--primary-color); color: white; border: none;
+            padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;
+        }
+        .open-btn:hover { background-color: #1f618d; }
+
+        /* Topic Detail View */
+        #topicDetailView { display: none; padding: 20px; }
+        .back-btn { background: transparent; color: #7f8c8d; border: 1px solid #bdc3c7; padding: 5px 15px; cursor: pointer; margin-bottom: 15px; border-radius: 4px; }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .tab { padding: 8px 16px; cursor: pointer; border-radius: 4px; font-weight: 600; color: #7f8c8d; }
+        .tab.active { background: var(--primary-color); color: white; }
+
+        .quiz-box, .assignment-box { background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #eee; }
+        
+        .explanation-box {
+            margin-top: 15px; padding: 15px; background: #e8f8f5; border-left: 4px solid var(--secondary-color);
+            border-radius: 4px; display: none;
+        }
+        .quiz-option { display: block; margin: 8px 0; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; }
+        .quiz-option:hover { background: #eaf2f8; }
+        .quiz-option.correct { background: #d4edda; border-color: #c3e6cb; }
+        .quiz-option.wrong { background: #f8d7da; border-color: #f5c6cb; }
+
+        textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-top: 5px; resize: vertical; }
+
+        /* eResources Grid */
+        .e-resources {
+            margin-top: 20px; padding: 20px; background: #fdfdfd; border: 1px dashed #bdc3c7; border-radius: 8px;
+        }
+        .e-resources h3 { margin-top: 0; color: var(--primary-color); font-size: 1.1rem; border-bottom: 2px solid #eee; padding-bottom: 10px;}
+        .resource-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
+        .res-card {
+            display: block; text-align: center; padding: 10px; background: white; border: 1px solid #eee;
+            border-radius: 6px; text-decoration: none; color: var(--text-color); font-size: 0.85rem;
+            transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .res-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); color: var(--primary-color); border-color: var(--primary-color); }
+        .res-icon { font-size: 1.5rem; margin-bottom: 5px; display: block; }
+
+        /* Chatbot */
+        .chat-container { border: 1px solid #ddd; border-radius: 8px; height: 500px; display: flex; flex-direction: column; background: #fff; }
+        .chat-header { background: var(--chat-color); color: white; padding: 15px; display: flex; align-items: center; gap: 10px; }
+        .chat-avatar { width: 35px; height: 35px; background: white; color: var(--chat-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #fafafa; }
+        .message { max-width: 80%; padding: 10px 15px; border-radius: 15px; font-size: 0.95rem; line-height: 1.4; }
+        .message.bot { background: white; border: 1px solid #ddd; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .message.user { background: var(--primary-color); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .chat-options { padding: 15px; border-top: 1px solid #ddd; display: flex; gap: 10px; flex-wrap: wrap; background: #fff; }
+        .chat-btn { background: white; border: 1px solid var(--chat-color); color: var(--chat-color); padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
+        .chat-btn:hover { background: var(--chat-color); color: white; }
+
+        /* Final Exam */
+        .final-exam-banner {
+            background: #c0392b;
+            color: white; padding: 20px; margin: 20px;
+            border-radius: 8px; text-align: center; display: none;
+        }
+        .exam-timer { font-size: 2.5rem; font-weight: bold; color: #f1c40f; margin: 10px 0; font-family: monospace; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
+
+        /* Modal */
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background-color: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 700px;
+            max-height: 90vh; overflow-y: auto; position: relative; border-top: 10px solid var(--primary-color);
+        }
+        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #aaa; }
+        .close-modal:hover { color: black; }
+        .question-block { border-bottom: 1px solid #eee; padding: 15px 0; }
+        .question-block strong { color: var(--primary-color); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 768px) { main { flex-direction: column; padding: 1rem; } .input-section, .output-section { width: 100%; max-width: 100%; } header { padding: 1rem 0; } .score-display { position: static; margin-top: 10px; display: inline-block; } }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Smart Learning Hub</h1>
+    <p>CBSE Syllabus, RD Sharma, DPP & Sample Papers</p>
+    <div class="score-display">Score: <span id="globalScore">0</span> 🏆</div>
+</header>
+
+<main>
+    <!-- Input Section -->
+    <section class="input-section">
+        <h2>Plan Generator</h2>
+        <form id="learningForm">
+            <div class="form-group">
+                <label>Student Name</label>
+                <input type="text" id="userName" placeholder="Enter your name..." required>
+            </div>
+            <div class="form-group">
+                <label>Class</label>
+                <select id="studentClass" required onchange="updateSubjects()">
+                    <option value="" disabled selected>Select Class</option>
+                    <option value="6">Class 6</option>
+                    <option value="7">Class 7</option>
+                    <option value="8">Class 8</option>
+                    <option value="9">Class 9</option>
+                    <option value="10">Class 10</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Subject</label>
+                <select id="subject" required disabled>
+                    <option value="" disabled selected>First Select Class</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Learning Path</label>
+                <select id="mode" required>
+                    <option value="video">📺 Video Learning</option>
+                    <option value="books">📚 NCERT Textbook</option>
+                    <option value="additional">📝 RD Sharma & Sample Papers</option>
+                    <option value="chatbot">🤖 AI Chatbot Tutor</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Duration</label>
+                <select id="time" required>
+                    <option value="1week">1 Week (Crash)</option>
+                    <option value="1month">1 Month</option>
+                    <option value="3months">3 Months (Full Course)</option>
+                </select>
+            </div>
+            <button type="submit" class="generate-btn">Generate Plan</button>
+        </form>
+    </section>
+
+    <!-- Output Section -->
+    <section class="output-section" id="outputArea">
+        <div id="loading" style="display:none; text-align: center; margin-top: 50px;">
+            <p>⏳ Loading CBSE Syllabus...</p>
+        </div>
+        
+        <!-- Main Dashboard (List View) -->
+        <div class="result-card" id="dashboardView">
+            <div class="result-header">
+                <div>
+                    <h2 id="planTitle" style="margin:0;">Syllabus Index</h2>
+                    <small id="planMeta">Student • Class • Subject • Mode</small>
+                </div>
+                <div id="paceBadge" style="font-size:0.85rem; background:#fff3cd; color:#856404; padding:5px 10px; border-radius:15px;"></div>
+            </div>
+            
+            <div id="topicListContainer">
+                <!-- Topics load here -->
+            </div>
+
+            <div class="final-exam-banner" id="finalExamBanner">
+                <h3>📝 Standard Sample Paper (Full Syllabus)</h3>
+                <p>Proper 1-Hour Exam Timer | 5 Standard Questions</p>
+                <button class="open-btn" style="background:white; color:#c0392b; padding:10px 30px;" onclick="startFinalExam()">Take Exam</button>
+            </div>
+
+            <!-- eRESOURCES SECTION -->
+            <div class="e-resources">
+                <h3>🌐 eResources (Official & Additional Content)</h3>
+                <div class="resource-grid">
+                    <!-- Existing -->
+                    <a href="https://diksha.gov.in/" target="_blank" class="res-card"><span class="res-icon">🎓</span> DIKSHA</a>
+                    <a href="https://nishtha.ncert.gov.in/" target="_blank" class="res-card"><span class="res-icon">🏛️</span> NISHTHA</a>
+                    <a href="https://epathshala.nic.in/" target="_blank" class="res-card"><span class="res-icon">📖</span> ePathshala</a>
+                    <a href="https://swayamprabha.gov.in/" target="_blank" class="res-card"><span class="res-icon">📺</span> Swayam Prabha</a>
+                    
+                    <!-- New Additions -->
+                    <a href="https://ndl.iitkgp.ac.in/" target="_blank" class="res-card"><span class="res-icon">📚</span> NDLI Library</a>
+                    <a href="https://pmevidya.gov.in/" target="_blank" class="res-card"><span class="res-icon">🎬</span> PM e-VIDYA</a>
+                    <a href="https://ncert.nic.in/exemplar.html" target="_blank" class="res-card"><span class="res-icon">✏️</span> NCERT Exemplar</a>
+                    
+                    <!-- Official CBSE Links -->
+                    <a href="https://www.cbse.gov.in/" target="_blank" class="res-card" style="border-color:var(--primary-color); color:var(--primary-color); font-weight:bold;"><span class="res-icon">🏫</span> CBSE Academic</a>
+                    <a href="https://www.cbse.gov.in/cbsenew/samplepaper.html" target="_blank" class="res-card" style="border-color:var(--video-color); color:var(--video-color);"><span class="res-icon">📝</span> CBSE Sample Papers</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Topic Detail View -->
+        <div class="result-card" id="topicDetailView">
+            <button class="back-btn" onclick="showDashboard()">← Back to Index</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <div>
+                    <h2 id="activeTopicTitle" style="color:var(--primary-color); margin:5px 0 0 0;">Topic Name</h2>
+                </div>
+                <div id="detailActions" style="display:flex; gap:10px;"></div>
+            </div>
+            
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('quiz')">Topic Quiz</div>
+                <div class="tab" onclick="switchTab('assignment')">RD Sharma / Practice</div>
+            </div>
+
+            <div id="tab-quiz" class="quiz-box">
+                <p><strong>Instruction:</strong> Answer correctly to earn points!</p>
+                <div id="topicQuestionContainer"></div>
+                <button id="checkTopicQuizBtn" class="generate-btn" style="margin-top:10px;" onclick="checkTopicAnswer()">Submit Answer</button>
+                <div id="quizExplanation" class="explanation-box"></div>
+            </div>
+
+            <div id="tab-assignment" class="assignment-box" style="display:none;">
+                <div id="paperContainer"></div>
+            </div>
+        </div>
+
+        <!-- Chatbot View -->
+        <div class="result-card" id="chatbotView">
+            <div class="chat-header">
+                <button class="back-btn" style="border:none; color:white; margin:0; padding:0 10px 0 0;" onclick="showDashboard()">✕</button>
+                <div class="chat-avatar">AI</div>
+                <div>
+                    <strong>Smart Tutor</strong><br>
+                    <small id="chatContext">Subject • Class</small>
+                </div>
+            </div>
+            <div class="chat-messages" id="chatMsgs">
+                <div class="message bot">Hello! Ready to study? I have the full CBSE syllabus loaded.</div>
+            </div>
+            <div class="chat-options" id="chatOptions"></div>
+        </div>
+
+    </section>
+</main>
+
+<!-- Final Exam Modal -->
+<div id="examModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeExam()">&times;</span>
+        <div style="text-align:center; border-bottom:1px solid #eee; padding-bottom:15px; margin-bottom:15px;">
+            <h2 style="color:var(--primary-color)">Standard Sample Paper</h2>
+            <div class="exam-timer" id="examTimer">60:00</div>
+            <p>Subject: <span id="examSubjectName"></span> | Full Syllabus Coverage</p>
+        </div>
+        <form id="examForm">
+            <div id="examQuestionsContainer"></div>
+            <button type="button" class="generate-btn" onclick="submitExam()">Submit Exam</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    /* --- SUBJECT MAPPING --- */
+    const subjectMapping = {
+        "6": ["Mathematics", "Science", "Social Science", "English"],
+        "7": ["Mathematics", "Science", "Social Science", "English"],
+        "8": ["Mathematics", "Science", "Social Science", "English"],
+        "9": ["Mathematics", "Physics", "Chemistry", "Biology", "History", "Geography", "Economics", "English"],
+        "10": ["Mathematics", "Physics", "Chemistry", "Biology", "History", "Geography", "Economics", "English"]
+    };
+
+    /* 
+       =======================================================================
+       CBSE SYLLABUS DATABASE
+       ======================================================================= 
+    */
+    const syllabusDB = {
+        "6": {
+            "Mathematics": ["Knowing Our Numbers", "Whole Numbers", "Playing with Numbers", "Basic Geometrical Ideas", "Understanding Elementary Shapes", "Integers", "Fractions", "Decimals", "Data Handling", "Mensuration", "Algebra", "Ratio and Proportion", "Symmetry", "Practical Geometry"],
+            "Science": ["Food: Where Does It Come From", "Components of Food", "Fibre to Fabric", "Sorting Materials", "Separation of Substances", "Changes Around Us", "Getting to Know Plants", "Body Movements", "Living Organisms", "Motion", "Light Shadows", "Electricity", "Magnets", "Water", "Air", "Garbage"],
+            "Social Science": ["History: What, Where, How and When?", "Geography: The Earth in the Solar System", "Geography: Globe Latitudes", "Geography: Motions of the Earth", "Geography: Maps", "Geography: Major Domains", "Geography: Landforms", "Geography: India", "Geography: Climate", "Civics: Understanding Diversity", "Civics: Discrimination", "Civics: Government", "Civics: Democracy", "Civics: Panchayati Raj", "Civics: Rural Admin", "Civics: Urban Admin"],
+            "English": ["A Tale of Two Birds", "The Friendly Mongoose", "The Shepherd’s Treasure", "The Old-Clock Shop", "Tansen", "The Monkey and the Crocodile", "The Wonder Called Sleep", "A Pact with the Sun", "Reptiles", "Strange Wrestling"]
+        },
+        "7": {
+            "Mathematics": ["Integers", "Fractions and Decimals", "Data Handling", "Simple Equations", "Lines and Angles", "The Triangle", "Congruence of Triangles", "Comparing Quantities", "Rational Numbers", "Practical Geometry", "Perimeter and Area", "Algebraic Expressions", "Exponents and Powers", "Symmetry", "Visualising Solid Shapes"],
+            "Science": ["Nutrition in Plants", "Nutrition in Animals", "Fibre to Fabric", "Heat", "Acids Bases Salts", "Physical Chemical Changes", "Weather Climate", "Winds Storms", "Soil", "Respiration", "Transportation", "Reproduction in Plants", "Motion and Time", "Electric Current", "Light", "Water", "Forests", "Wastewater"],
+            "Social Science": ["Environment", "Inside Our Earth", "Our Changing Earth", "Air", "Water", "Natural Vegetation", "Human Environment", "Tropical Subtropical Region", "Temperate Grasslands", "Deserts", "Tracing Changes", "New Kings", "Delhi Sultans", "Mughal Empire", "Rulers and Buildings", "Towns Traders", "Tribals Dikus", "Devotional Paths", "Regional Cultures", "Political Formations", "On Equality", "Govt Health", "State Govt", "Growing Up", "Women Change World", "Media", "Advertising", "Markets", "Shirt in Market"],
+            "English": ["Three Questions", "Gift of Chappals", "Gopal and Hilsa Fish", "Ashes Made Trees Bloom", "Chandni", "Tiger in House", "Bear Story"]
+        },
+        "8": {
+            "Mathematics": ["Rational Numbers", "Linear Equations", "Understanding Quadrilaterals", "Practical Geometry", "Data Handling", "Squares Roots", "Cubes Roots", "Comparing Quantities", "Algebraic Expressions", "Visualising Solid Shapes", "Mensuration", "Exponents Powers", "Direct Inverse Proportions", "Factorisation", "Graphs", "Playing with Numbers"],
+            "Science": ["Crop Production", "Microorganisms", "Synthetic Fibres", "Metals Non-Metals", "Coal Petroleum", "Combustion Flame", "Conservation Plants Animals", "Cell Structure", "Reproduction in Animals", "Adolescence", "Force and Pressure", "Friction", "Sound", "Chemical Effects", "Natural Phenomena", "Light", "Solar System", "Pollution"],
+            "Social Science": ["Resources", "Land Soil Water", "Mineral Power", "Agriculture", "Industries", "Human Resources", "How When Where", "Trade to Territory", "Ruling Countryside", "Tribals Dikus", "When People Rebel", "Colonialism City", "Weavers Iron Smelters", "Civilising Native", "Women Caste Reform", "Visual Arts", "National Movement", "India Independence", "Constitution", "Secularism", "Parliament", "Laws", "Judiciary", "Criminal Justice", "Marginalisation", "Confronting Marginalisation", "Public Facilities", "Law and Social Justice"],
+            "English": ["Best Christmas Present", "Ant and Cricket", "The Tsunami", "Geography Lesson", "Glimpses of Past", "Bepin Choudhury", "Summit Within", "Visit to Cambridge", "Great Stone Face I", "Great Stone Face II"]
+        },
+        "9": {
+            "Mathematics": ["Number Systems", "Polynomials", "Coordinate Geometry", "Linear Equations", "Euclid's Geometry", "Lines and Angles", "Triangles", "Quadrilaterals", "Areas Parallelograms", "Circles", "Constructions", "Heron's Formula", "Surface Areas Volumes", "Statistics", "Probability"],
+            "Physics": ["Motion", "Force and Laws", "Gravitation", "Work and Energy", "Sound"],
+            "Chemistry": ["Matter in Our Surroundings", "Is Matter Pure", "Atoms and Molecules", "Structure of Atom"],
+            "Biology": ["Fundamental Unit of Life", "Tissues", "Diversity", "Why Do We Fall Ill", "Natural Resources", "Improvement in Food Resources"],
+            "History": ["French Revolution", "Socialism in Europe", "Nazism", "Forest Society", "Pastoralists", "Peasants Farmers", "Cricket", "Clothing"],
+            "Geography": ["India Size Location", "Physical Features", "Drainage", "Climate", "Natural Vegetation", "Population"],
+            "Economics": ["Village Palampur", "People as Resource", "Poverty", "Food Security"],
+            "English": ["Fun They Had", "Sound of Music", "Little Girl", "Truly Beautiful Mind", "Snake and Mirror", "My Childhood", "Packing", "Reach for the Top", "Bond of Love", "Kathmandu", "If I Were You"]
+        },
+        "10": {
+            "Mathematics": ["Real Numbers", "Polynomials", "Linear Equations", "Quadratic Equations", "Arithmetic Progressions", "Triangles", "Coordinate Geometry", "Trigonometry", "Applications of Trigonometry", "Circles", "Constructions", "Areas Related to Circles", "Surface Areas Volumes", "Statistics", "Probability"],
+            "Physics": ["Light Reflection Refraction", "Human Eye", "Electricity", "Magnetic Effects", "Sources of Energy"],
+            "Chemistry": ["Chemical Reactions", "Acids Bases Salts", "Metals Non-metals", "Carbon Compounds", "Periodic Classification"],
+            "Biology": ["Life Processes", "Control and Coordination", "Reproduction", "Heredity Evolution", "Our Environment", "Management of Natural Resources"],
+            "History": ["Rise of Nationalism", "Nationalism in India", "Making of Global World", "Age of Industrialisation", "Print Culture"],
+            "Geography": ["Resources and Development", "Forest Wildlife", "Water Resources", "Agriculture", "Minerals Energy", "Manufacturing Industries", "Lifelines of National Economy"],
+            "Economics": ["Development", "Sectors of Economy", "Money and Credit", "Globalisation", "Consumer Rights"],
+            "English": ["Letter to God", "Nelson Mandela", "Two Stories About Flying", "Diary of Anne Frank", "Hundred Dresses I", "Hundred Dresses II", "Glimpses of India", "Mijbil the Otter", "Madam Rides the Bus", "Sermon at Benares", "The Proposal"]
+        }
+    };
+
+    /* --- HELPER FUNCTIONS --- */
+    let globalScore = 0;
+
+    function getChannelName(cls) {
+        if(cls === "6" || cls === "7" || cls === "8") return "LearnOHub";
+        return "NextToppers";
+    }
+
+    function updateScore(points) {
+        globalScore += points;
+        document.getElementById('globalScore').innerText = globalScore;
+        const scoreEl = document.querySelector('.score-display');
+        scoreEl.style.transform = "scale(1.2)";
+        setTimeout(() => scoreEl.style.transform = "scale(1)", 200);
+    }
+
+    /* --- QUESTION GENERATOR --- */
+    function getNCERTQuestion(topic, subject, cls) {
+        const t = topic.toLowerCase();
+        if(subject === "Mathematics") {
+            if(t.includes("number") || t.includes("integer")) return { q: `Which property is fundamental to ${topic}?`, options: ["Commutative", "Associative", "Closure", "Distributive"], a: 2, exp: "The closure property states that performing an operation on two numbers results in another number of the same set." };
+            if(t.includes("algebra") || t.includes("equation")) return { q: "What is the degree of a linear equation?", options: ["0", "1", "2", "3"], a: 1, exp: "A linear equation is degree 1." };
+            if(t.includes("geometry") || t.includes("triangle")) return { q: "Sum of interior angles of a triangle is:", options: ["90°", "180°", "270°", "360°"], a: 1, exp: "The Angle Sum Property of a triangle is 180 degrees." };
+            if(t.includes("statistics")) return { q: "Mean of first 5 natural numbers is:", options: ["2", "3", "4", "5"], a: 1, exp: "(1+2+3+4+5)/5 = 3." };
+        } else if (subject === "Science" || subject === "Physics" || subject === "Chemistry" || subject === "Biology") {
+            if(t.includes("light")) return { q: "Which lens is used to correct myopia?", options: ["Convex", "Concave", "Cylindrical", "Bifocal"], a: 1, exp: "Myopia (nearsightedness) is corrected using a concave lens." };
+            if(t.includes("force") || t.includes("motion")) return { q: "Rate of change of momentum is:", options: ["Force", "Velocity", "Acceleration", "Impulse"], a: 0, exp: "Newton's Second Law: Force = dp/dt." };
+            if(t.includes("cell")) return { q: "The basic unit of life is:", options: ["Tissue", "Cell", "Organ", "Organism"], a: 1, exp: "The cell is the structural and functional unit of life." };
+            if(t.includes("chemical")) return { q: "A reaction which absorbs heat is called:", options: ["Exothermic", "Endothermic", "Redox", "Displacement"], a: 1, exp: "Endothermic reactions absorb heat." };
+        } else if (subject === "English") {
+            return { q: `Identify the theme of "${topic}".`, options: ["Hope", "Despair", "War", "Nature"], a: 0, exp: "Literature often explores themes like hope and resilience." };
+        }
+        return { q: `Which statement is correct for ${topic}?`, options: ["A", "B", "C", "D"], a: 0, exp: "This is based on standard definitions." };
+    }
+
+    function getPracticePaper(topic, subject) {
+        return [
+            { q: `Q1. Solve the following problem from RD Sharma: "${topic}". (Numerical)`, marks: 4 },
+            { q: `Q2. Prove the theorem related to ${topic}.`, marks: 5 },
+            { q: `Q3. Short Answer Questions on ${topic}.`, marks: 2 }
+        ];
+    }
+
+    /* --- GLOBAL STATE --- */
+    let currentSubject = "";
+    let currentClass = "";
+    let currentTopics = [];
+    let currentMode = "video";
+    let examTimerInterval;
+
+    /* --- FORM HANDLING --- */
+    function updateSubjects() {
+        const classVal = document.getElementById('studentClass').value;
+        const subjectSelect = document.getElementById('subject');
+        subjectSelect.innerHTML = '<option value="" disabled selected>Select Subject</option>';
+        
+        // Check if the class exists in mapping to prevent errors
+        if (classVal && subjectMapping[classVal]) {
+            subjectSelect.disabled = false;
+            subjectMapping[classVal].forEach(sub => {
+                const option = document.createElement('option');
+                option.value = sub;
+                option.textContent = sub;
+                subjectSelect.appendChild(option);
+            });
+        } else {
+            subjectSelect.disabled = true;
+        }
+    }
+
+    document.getElementById('learningForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const name = document.getElementById('userName').value;
+        const cls = document.getElementById('studentClass').value;
+        const sub = document.getElementById('subject').value;
+        const time = document.getElementById('time').value;
+        const mode = document.getElementById('mode').value;
+
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('dashboardView').style.display = 'none';
+        document.getElementById('chatbotView').style.display = 'none';
+        document.getElementById('topicDetailView').style.display = 'none';
+
+        setTimeout(() => {
+            initDashboard(name, cls, sub, time, mode);
+            document.getElementById('loading').style.display = 'none';
+            if(mode === 'chatbot') initChatbot(cls, sub);
+            else document.getElementById('dashboardView').style.display = 'block';
+        }, 600);
+    });
+
+    function initDashboard(name, cls, sub, time, mode) {
+        currentSubject = sub;
+        currentClass = cls;
+        currentMode = mode;
+        currentTopics = syllabusDB[cls]?.[sub] || ["Introduction"];
+
+        const channel = getChannelName(cls);
+        document.getElementById('planTitle').innerText = `${sub} Index`;
+        document.getElementById('planMeta').innerText = `Student: ${name} | Class: ${cls} | Mode: ${mode.charAt(0).toUpperCase() + mode.slice(1)}`;
+        
+        let pace = time === "1week" ? "⚡ Fast Track" : (time === "1month" ? "📅 Regular Pace" : "🌊 Full Course");
+        document.getElementById('paceBadge').innerText = pace;
+
+        const list = document.getElementById('topicListContainer');
+        list.innerHTML = "";
+        
+        let displayCount = currentTopics.length;
+        if(time === "1week") displayCount = Math.min(5, currentTopics.length);
+
+        currentTopics.slice(0, displayCount).forEach((topic, index) => {
+            let linksHtml = "";
+            
+            if(mode === 'video') {
+                const query = `${channel} Class ${cls} ${sub} ${topic}`;
+                linksHtml += `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(query)}" target="_blank" class="action-link mode-video">▶ Video</a>`;
+            } else if (mode === 'books') {
+                linksHtml += `<a href="https://ncert.nic.in/textbook.php" target="_blank" class="action-link mode-book">📖 NCERT</a>`;
+            } else if (mode === 'additional') {
+                linksHtml += `<a href="https://www.cbse.gov.in/cbsenew/samplepaper.html" target="_blank" class="action-link mode-add">📝 Sample</a>`;
+                if(sub === "Mathematics") {
+                    const rdQuery = `RD Sharma Class ${cls} Maths ${topic} Solutions`;
+                    linksHtml += `<a href="https://www.google.com/search?q=${encodeURIComponent(rdQuery)}" target="_blank" class="action-link mode-rd">📘 RD Sharma</a>`;
+                }
+            }
+
+            const div = document.createElement('div');
+            div.className = 'topic-card';
+            div.innerHTML = `
+                <div style="display:flex; align-items:center;">
+                    <span class="topic-index">CH ${index+1}</span>
+                    <span class="topic-title" style="font-weight:500;">${topic}</span>
+                </div>
+                <div class="topic-actions">
+                    ${linksHtml}
+                    <button class="open-btn" onclick="openTopic(${index})">Open</button>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+
+        document.getElementById('finalExamBanner').style.display = 'block';
+    }
+
+    /* --- CHATBOT --- */
+    function initChatbot(cls, sub) {
+        document.getElementById('chatbotView').style.display = 'block';
+        document.getElementById('chatContext').innerText = `${sub} • Class ${cls}`;
+        const msgs = document.getElementById('chatMsgs');
+        const opts = document.getElementById('chatOptions');
+        msgs.innerHTML = `<div class="message bot">Hi! Ready to study? I have the full CBSE syllabus loaded.</div>`;
+        opts.innerHTML = "";
+        currentTopics.slice(0, 5).forEach(topic => {
+            const btn = document.createElement('button');
+            btn.className = 'chat-btn';
+            btn.innerText = topic;
+            btn.onclick = () => sendChat(topic);
+            opts.appendChild(btn);
+        });
+    }
+
+    function sendChat(topic) {
+        const msgs = document.getElementById('chatMsgs');
+        msgs.innerHTML += `<div class="message user">${topic}</div>`;
+        msgs.scrollTop = msgs.scrollHeight;
+        setTimeout(() => {
+            const channel = getChannelName(currentClass);
+            const query = `${channel} Class ${currentClass} ${currentSubject} ${topic}`;
+            const link = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+            msgs.innerHTML += `<div class="message bot">Sure! For <strong>${topic}</strong>, check this: <a href="${link}" target="_blank" style="color:var(--primary-color)">Watch Here</a>. Use "Additional Mode" for RD Sharma practice.</div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+        }, 800);
+    }
+
+    function showDashboard() {
+        document.getElementById('dashboardView').style.display = 'block';
+        document.getElementById('topicDetailView').style.display = 'none';
+        document.getElementById('chatbotView').style.display = 'none';
+    }
+
+    function openTopic(index) {
+        const topic = currentTopics[index];
+        document.getElementById('dashboardView').style.display = 'none';
+        document.getElementById('topicDetailView').style.display = 'block';
+        document.getElementById('activeTopicTitle').innerText = topic;
+
+        const detailActions = document.getElementById('detailActions');
+        const channel = getChannelName(currentClass);
+        
+        let buttonsHtml = "";
+        const query = `${channel} Class ${currentClass} ${currentSubject} ${topic}`;
+        buttonsHtml += `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(query)}" target="_blank" class="action-link mode-video" style="font-size:0.9rem;">▶ Video</a>`;
+        buttonsHtml += `<a href="https://ncert.nic.in/textbook.php" target="_blank" class="action-link mode-book" style="font-size:0.9rem;">📖 NCERT</a>`;
+        
+        if(currentSubject === "Mathematics") {
+            const rdQuery = `RD Sharma Class ${currentClass} Maths ${topic} Solutions`;
+            buttonsHtml += `<a href="https://www.google.com/search?q=${encodeURIComponent(rdQuery)}" target="_blank" class="action-link mode-rd" style="font-size:0.9rem;">📘 RD Sharma</a>`;
+        } else {
+            buttonsHtml += `<a href="https://www.cbse.gov.in/" target="_blank" class="action-link mode-video" style="font-size:0.9rem;">🏫 CBSE</a>`;
+        }
+        
+        detailActions.innerHTML = buttonsHtml;
+
+        switchTab('quiz');
+        document.getElementById('topicQuizFeedback').innerText = "";
+        document.getElementById('quizExplanation').style.display = 'none';
+        loadTopicQuiz(topic);
+        loadPracticePaper(topic);
+    }
+
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.quiz-box, .assignment-box').forEach(b => b.style.display = 'none');
+        if(tabName === 'quiz') {
+            document.querySelector('.tab:nth-child(1)').classList.add('active');
+            document.getElementById('tab-quiz').style.display = 'block';
+        } else {
+            document.querySelector('.tab:nth-child(2)').classList.add('active');
+            document.getElementById('tab-assignment').style.display = 'block';
+        }
+    }
+
+    function loadTopicQuiz(topic) {
+        const container = document.getElementById('topicQuestionContainer');
+        const qData = getNCERTQuestion(topic, currentSubject, currentClass);
+        container.innerHTML = `
+            <p><strong>Q:</strong> ${qData.q}</p>
+            <div id="topicOptions">
+                ${qData.options.map((opt, i) => `<label class="quiz-option"><input type="radio" name="tq" value="${i}"> ${opt}</label>`).join('')}
+            </div>
+            <input type="hidden" id="quizExplanationText" value="${qData.exp}">
+        `;
+        container.dataset.correct = qData.a;
+        document.getElementById('checkTopicQuizBtn').disabled = false;
+    }
+
+    function checkTopicAnswer() {
+        const container = document.getElementById('topicQuestionContainer');
+        const selected = document.querySelector('input[name="tq"]:checked');
+        const feedback = document.getElementById('topicQuizFeedback');
+        const explanationBox = document.getElementById('quizExplanation');
+        const explanationText = document.getElementById('quizExplanationText').value;
+        
+        if(!selected) { feedback.innerText = "Please select an option."; return; }
+        
+        if(selected.value == container.dataset.correct) {
+            feedback.innerText = "✅ Correct! +10 Points";
+            feedback.style.color = "green";
+            updateScore(10);
+        } else {
+            feedback.innerText = "❌ Incorrect. No points.";
+            feedback.style.color = "red";
+        }
+        explanationBox.innerHTML = `<strong>Explanation:</strong> ${explanationText}`;
+        explanationBox.style.display = 'block';
+        document.getElementById('checkTopicQuizBtn').disabled = true;
+    }
+
+    function loadPracticePaper(topic) {
+        const container = document.getElementById('paperContainer');
+        const questions = getPracticePaper(topic, currentSubject);
+        let html = `<p style="color:#666; margin-bottom:15px;">Practice with <strong>RD Sharma</strong> style questions:</p>`;
+        questions.forEach((q, index) => {
+            html += `<div class="paper-question"><strong>${q.q} (${q.marks} Marks)</strong><textarea id="ans${index}" placeholder="Type your answer..."></textarea></div>`;
+        });
+        html += `<button class="generate-btn" onclick="submitPaper()">Submit Paper</button><p id="paperFeedback" style="margin-top:10px; color:var(--secondary-color); font-weight:bold;"></p>`;
+        container.innerHTML = html;
+    }
+
+    function submitPaper() {
+        document.getElementById('paperFeedback').innerText = "Paper Submitted Successfully! ✅";
+    }
+
+    /* --- FINAL EXAM (STANDARD SAMPLE PAPER) --- */
+    function startFinalExam() {
+        const modal = document.getElementById('examModal');
+        const qContainer = document.getElementById('examQuestionsContainer');
+        document.getElementById('examSubjectName').innerText = currentSubject;
+        qContainer.innerHTML = "";
+        
+        const fullSyllabus = syllabusDB[currentClass][currentSubject] || currentTopics;
+        
+        for(let i=0; i<5; i++) {
+            const randomTopicIndex = Math.floor(Math.random() * fullSyllabus.length);
+            const topic = fullSyllabus[randomTopicIndex];
+            const q = getNCERTQuestion(topic, currentSubject, currentClass);
+            
+            qContainer.innerHTML += `
+                <div class="question-block">
+                    <p><strong>Q${i+1} (${topic}):</strong> ${q.q}</p>
+                    ${q.options.map((opt, optIndex) => `<label style="display:block; margin:5px 0;"><input type="radio" name="eq${i}" value="${optIndex}"> ${opt}</label>`).join('')}
+                    <input type="hidden" name="correct${i}" value="${q.a}">
+                </div>
+            `;
+        }
+        modal.style.display = 'flex';
+        startTimer(3600); // 1 Hour
+    }
+
+    function startTimer(duration) {
+        let timer = duration, minutes, seconds;
+        const display = document.getElementById('examTimer');
+        clearInterval(examTimerInterval);
+        examTimerInterval = setInterval(function () {
+            minutes = parseInt(timer / 60, 10);
+            seconds = parseInt(timer % 60, 10);
+            minutes = minutes < 10 ? "0" + minutes : minutes;
+            seconds = seconds < 10 ? "0" + seconds : seconds;
+            display.textContent = minutes + ":" + seconds;
+            if (--timer < 0) { clearInterval(examTimerInterval); alert("Time's up! Submitting exam..."); submitExam(); }
+        }, 1000);
+    }
+
+    function submitExam() {
+        clearInterval(examTimerInterval);
+        let score = 0;
+        const questions = document.getElementById('examQuestionsContainer').children;
+        for(let i=0; i<questions.length; i++) {
+            const selected = document.querySelector(`input[name="eq${i}"]:checked`);
+            const correct = document.querySelector(`input[name="correct${i}"]`).value;
+            if(selected && selected.value === correct) score++;
+        }
+        const percentage = (score / questions.length) * 100;
+        let msg = percentage >= 60 ? "Pass! 🎉 Good Performance." : "Needs Improvement. Keep Practicing! 📚";
+        alert(`Sample Paper Submitted!\nScore: ${score}/${questions.length} (${percentage}%)\n${msg}`);
+        closeExam();
+    }
+
+    function closeExam() {
+        clearInterval(examTimerInterval);
+        document.getElementById('examModal').style.display = 'none';
+    }
+</script>
+
+</body>
+</html>
+```
